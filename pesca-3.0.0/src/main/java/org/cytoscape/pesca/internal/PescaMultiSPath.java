@@ -22,7 +22,7 @@ import org.cytoscape.model.CyNode;
 
 
 
-public class PescaMultiSPath {
+public class PescaMultiSPath implements Comparable<PescaMultiSPath>{
     
     private CyNode node;
     private String nodename;
@@ -159,6 +159,11 @@ public class PescaMultiSPath {
 		
 		
 	}
+
+    @Override
+    public int compareTo(PescaMultiSPath o) {
+        return Integer.compare(cost, o.getCost());
+    }
 	
      
        
