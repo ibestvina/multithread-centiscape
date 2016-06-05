@@ -14,10 +14,10 @@ hs_err_pid*
 
 # Netbeans
 /pesca-3.0.0/target
+/CentiScaPe2.1/target
 
 # Eclipse
 /pesca-3.0.0/.settings
 
 
 # Other
-/CentiScaPe2.1/
