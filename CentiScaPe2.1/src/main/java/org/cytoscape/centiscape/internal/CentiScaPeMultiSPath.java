@@ -16,7 +16,7 @@ import java.util.*;
 import org.cytoscape.model.CyNetwork;
 import org.cytoscape.model.CyNode;
 
-public class CentiScaPeMultiSPath{
+public class CentiScaPeMultiSPath implements Comparable<CentiScaPeMultiSPath> {
 
     private CyNode node;
     private long nodesuid;
@@ -150,5 +150,9 @@ public class CentiScaPeMultiSPath{
         return PathString;
     }
 
+    @Override
+    public int compareTo(CentiScaPeMultiSPath o) {
+        return Integer.compare(cost, o.getCost());
+    }
 
 }

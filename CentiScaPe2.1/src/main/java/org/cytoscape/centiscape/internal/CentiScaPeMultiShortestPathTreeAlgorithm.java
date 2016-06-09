@@ -129,7 +129,7 @@ public class CentiScaPeMultiShortestPathTreeAlgorithm {
     // public static void initialize(HashSet TempSet, LinkedList Queue, CyNetwork network, CyNetworkView view, CyNode root) {
     public static void initialize(HashSet TempSet, LinkedList Queue, CyNetwork network, CyNode root) {
 
-        //create the root Shortest Path (cost=o, predecessor = null)
+        //create the root Shortest Path (cost=0, predecessor = null)
         CentiScaPeMultiSPath primospath = new CentiScaPeMultiSPath(root, 0, network);
         //initialize shortest path for each node
         // predecessor is null and shortestpath cost is the maximum
@@ -153,7 +153,6 @@ public class CentiScaPeMultiShortestPathTreeAlgorithm {
         }
     }
 
-    // public static void ShortestPathCore(HashSet PathSet, HashSet TempSet, LinkedList Queue, CyNetwork network, CyNetworkView view, CyNode root) {
     public static void ShortestPathCore(HashSet PathSet, HashSet TempSet, LinkedList Queue, CyNetwork network, CyNode root) {
 
         //Iterate the minimum path algorithm on the Queue list
@@ -165,12 +164,12 @@ public class CentiScaPeMultiShortestPathTreeAlgorithm {
             }
 
             // get the neighbors of the selected CentiScaPeMultiSPath node
-            List neighbors = new ArrayList();
+            List neighbors;
             if (directed) {
                 neighbors = network.getNeighborList(currentSPath.getNode(), CyEdge.Type.OUTGOING);
             } else {
                 neighbors = network.getNeighborList(currentSPath.getNode(), CyEdge.Type.ANY);
-
+                
                 // remove duplicate edges
                 Set tmpSet = new HashSet();
                 tmpSet.addAll(neighbors);
