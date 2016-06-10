@@ -22,5 +22,5 @@ public class ComputationResult {
 
     public Vector getResult() {
         return result;
-    } 
+    }    
 }
