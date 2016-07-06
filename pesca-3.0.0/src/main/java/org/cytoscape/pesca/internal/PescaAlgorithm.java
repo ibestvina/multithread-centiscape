@@ -13,6 +13,13 @@
 package org.cytoscape.pesca.internal;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.*;
 
 import org.cytoscape.model.CyNetwork;
@@ -31,7 +38,6 @@ public class PescaAlgorithm {
 
     private boolean directed = false;
     private boolean weighted = false;
-    private boolean stop = false;
     private boolean treeisOn = false;
     private boolean shortestPathisOn = false;
     private boolean spClusterisOn = false;
@@ -48,6 +54,11 @@ public class PescaAlgorithm {
     public PescaSPMap pescamap;
     public int totalnodecount;
 
+    // multithread fields
+    private final int THREADS_PER_CPU = 1;
+    private ExecutorService executor;
+    private boolean stop;
+
     /**
      * Creates a new instance of PescaAlgorithm
      */
@@ -58,7 +69,6 @@ public class PescaAlgorithm {
     public void ExecutePescaAlgorithm(CyNetwork currentnetwork, CyNetworkView currentview, JPanel c) {
 
         openResultPanel = false;
-        stop = false;
         PescaStartMenu menustart = (PescaStartMenu) c;
         // JOptionPane.showMessageDialog(view.getComponent(),
         //          "comincio1 = " );
@@ -70,6 +80,21 @@ public class PescaAlgorithm {
         int nodeworked = 0;
         Vector PescaMultiShortestPathVector = null;
         Vector SPdistributionVector;
+
+        // Multithread initialization
+        stop = false;
+
+        // get the number of procesors available
+        int numProc = Runtime.getRuntime().availableProcessors();
+        System.out.println("Number of processors: " + numProc);
+
+        // number of threads used
+        int numThreads = numProc * THREADS_PER_CPU;
+        System.out.println("Number of threads: " + numThreads + "\n");
+
+        // construct threadpool
+        // note: newCachedThreadPool may also be used
+        executor = Executors.newFixedThreadPool(numThreads);
 
         //CyAttributes currentNetworkAttributes = Cytoscape.getNetworkAttributes();
         //CyAttributes currentNodeAttributes = Cytoscape.getNodeAttributes();
@@ -124,38 +149,53 @@ public class PescaAlgorithm {
             List<CyNode> rootlist2 = menustart.GiantComponent;
             source = menustart.NodestoConnect.get(0);
             System.out.println(rootlist2);
-
-            int size = 100000;
+            
+            List<SourceTarget> STPairs = new LinkedList<>();
             for (int i = 0; i < rootlist2.size(); i++) {
                 System.out.println("i= " + i + "size = " + rootlist2.size());
                 target = (CyNode) rootlist2.get(i);
                 System.out.println("target = " + target.toString());
                 if (target != source) {
-                    tmpPescaMultiShortestPathVector = PescaMultiShortestPathTreeAlgorithm.ExecuteMultiShortestPathSourceTargetAlgorithm(currentnetwork, source, target, directed, weighted, weightColumn);
-                    if (tmpPescaMultiShortestPathVector != null) {
-                        PescaShortestPathList p = (PescaShortestPathList) tmpPescaMultiShortestPathVector.firstElement();
-
-                        if (p.size() == size) {
-                            System.out.println("same");
-                            SingleSPVector.add(tmpPescaMultiShortestPathVector.firstElement());
-                            PescaMultiShortestPathVector.addAll(tmpPescaMultiShortestPathVector);
-                            size = p.size();
-                        } else if (p.size() < size) {
-                            System.out.println("lesser");
-                            SingleSPVector.removeAllElements();
-                            PescaMultiShortestPathVector.removeAllElements();
-                            SingleSPVector.add(tmpPescaMultiShortestPathVector.firstElement());
-                            PescaMultiShortestPathVector.addAll(tmpPescaMultiShortestPathVector);
-                            size = p.size();
-                        }
-
-                    }
+                    STPairs.add(new SourceTarget(source, target));
                 }
-
             }
+            
+            List<Vector> results;
+            try {
+                results = multithreadMultiSPSourceTargetExecute(currentnetwork, STPairs);
+            } catch (InterruptedException ex) {
+                System.out.println(ex);
+                cancel();
+                return;
+            }
+            
+            int size = Integer.MAX_VALUE;
+            
+            for (Vector result : results) {
+                if (result != null) {
+                    PescaShortestPathList p = (PescaShortestPathList) result.firstElement();
+
+                    if (p.size() == size) {
+                        System.out.println("same");
+                        SingleSPVector.add(result.firstElement());
+                        PescaMultiShortestPathVector.addAll(result);
+                        size = p.size();
+                    } else if (p.size() < size) {
+                        System.out.println("lesser");
+                        SingleSPVector.removeAllElements();
+                        PescaMultiShortestPathVector.removeAllElements();
+                        SingleSPVector.add(result.firstElement());
+                        PescaMultiShortestPathVector.addAll(result);
+                        size = p.size();
+                    }
+
+                }
+            }
+
             pescamap = shortestPathsDistribution(SingleSPVector);
         }
 
+        // NOT USED
         if (shortestPathisOn) {
             openResultPanel = true;
 
@@ -183,27 +223,39 @@ public class PescaAlgorithm {
             Vector SingleSPVector = new Vector();
             Vector tmpPescaMultiShortestPathVector = new Vector();
             SPdistributionVector = new Vector();
-
+            
+            List<SourceTarget> STPairs = new LinkedList<>();
+            
             
             for (int i = 0; i < rootlist.size(); i++) {
                 for (int j = 0; j < rootlist.size(); j++) {
                     if (i != j) {
-
-                        CyNode source = (CyNode) rootlist.get(i);
-                        target = (CyNode) rootlist.get(j);
-                        tmpPescaMultiShortestPathVector = PescaMultiShortestPathTreeAlgorithm.ExecuteMultiShortestPathSourceTargetAlgorithm(currentnetwork, source, target, directed, weighted, weightColumn);
-
-                        if (tmpPescaMultiShortestPathVector != null) {
-                            SingleSPVector.add(tmpPescaMultiShortestPathVector.firstElement());
-                            PescaMultiShortestPathVector.addAll(tmpPescaMultiShortestPathVector);
-                        }
+                        STPairs.add(new SourceTarget(rootlist.get(i), rootlist.get(j)));
                     }
                 }
             }
+            
+            List<Vector> results;
+            try {
+                results = multithreadMultiSPSourceTargetExecute(currentnetwork, STPairs);
+            } catch (InterruptedException ex) {
+                System.out.println(ex);
+                cancel();
+                return;
+            }
+            
+            for (Vector result : results) {
+                SingleSPVector.add(result.firstElement());
+                PescaMultiShortestPathVector.addAll(result);
+            }
+            
+           
             pescamap = shortestPathsDistribution(SingleSPVector);
             //  System.out.println("la pesca map dopo la chiamataaaa = " + pescamap.toString());
         }
 
+        // NOT USED!
+        /*
         if (spAllNodesIsOn) {
             openResultPanel = true;
             PescaMultiShortestPathVector = new Vector();
@@ -211,18 +263,45 @@ public class PescaAlgorithm {
             Vector tmpPescaMultiShortestPathVector = new Vector();
             SPdistributionVector = new Vector();
             List<CyNode> allNodes = currentnetwork.getNodeList();
-            for (int i = 0; i < allNodes.size(); i++) {
 
-                tmpPescaMultiShortestPathVector = PescaMultiShortestPathTreeAlgorithm.ExecuteMultiShortestPathTreeAlgorithm(currentnetwork, allNodes.get(i), directed, weighted, weightColumn);
-                if (tmpPescaMultiShortestPathVector != null && tmpPescaMultiShortestPathVector.size() >= 1) {
-                    SingleSPVector.addAll(tmpPescaMultiShortestPathVector);
-                    PescaMultiShortestPathVector.addAll(tmpPescaMultiShortestPathVector);
-                }
+            // list of CompletableFutures - one per each root node
+            List<CompletableFuture<Vector>> futureResults = new LinkedList<>();
 
+            for (CyNode treeRoot : allNodes) {
+                CompletableFuture<Vector> futureResult = CompletableFuture.supplyAsync(() -> {
+                    try {
+                        // execute
+                        return PescaMultiShortestPathTreeAlgorithm.ExecuteMultiShortestPathTreeAlgorithm(currentnetwork, treeRoot, directed, weighted, weightColumn);
+                    } catch (Exception e) {
+                        System.out.println("Execution of SPTreeAlg interrupted");
+                        return null;
+                    }
+                }, executor);
+                futureResults.add(futureResult);
             }
+
+            for (CompletableFuture<Vector> futureResult : futureResults) {
+                if (stop || futureResult.isCompletedExceptionally()) {
+                    cancel();
+                    return;
+                }
+                try {
+                    tmpPescaMultiShortestPathVector = futureResult.get(); // get the result of the computation
+                    if (tmpPescaMultiShortestPathVector != null && tmpPescaMultiShortestPathVector.size() >= 1) {
+                        SingleSPVector.addAll(tmpPescaMultiShortestPathVector);
+                        PescaMultiShortestPathVector.addAll(tmpPescaMultiShortestPathVector);
+                    }
+                } catch (InterruptedException | ExecutionException ex) {
+                    System.out.println(ex);
+                    cancel();
+                    return;
+                }
+            }
+
             pescamap = shortestPathsDistribution(SingleSPVector);
             //  System.out.println("la pesca map dopo la chiamataaaa = " + pescamap.toString());
         }
+*/
 
         if (openResultPanel) {
             //  System.out.println(PescaMultiShortestPathVector.toString());
@@ -283,11 +362,13 @@ public class PescaAlgorithm {
             //  System.out.println("scrivo la pesca map 1" + pescamap.toString());
             pescacore.createPescaResultPanel(PescaMultiShortestPathVector, resulttype, pescamap);
 
+            // shutdown all the threads from the pool
+            executor.shutdown();
         }
     }
 
     public void endalgorithm() {
-        stop = true;
+        cancel();
     }
 
     public void setChecked(boolean[] ison, boolean directed, boolean weighted) {
@@ -344,21 +425,80 @@ public class PescaAlgorithm {
         //      networkTable.createColumn("SP-Distribution", Long.class, false);
         return pescaspmap;
     }
-    /*
-     public double CalculateDiameter(Vector SingleShortestPathVector) {
-     PescaShortestPathList currentdiameterlist;
-     int currentmaxvalue = 0;
-     double currentvalue = 0;
-     for (int j = 0; j < SingleShortestPathVector.size(); j++) {
-     currentdiameterlist = (PescaShortestPathList) SingleShortestPathVector.elementAt(j);
-     //    currentRadiality.updatesizevector(new Integer(currentlist.size()-1));
-     currentmaxvalue = Math.max(currentmaxvalue, currentdiameterlist.size() - 1);
-     }
-     if (currentmaxvalue > currentvalue) {
-     currentvalue = ((double) currentmaxvalue);
-     //   JOptionPane.showMessageDialog(view.getComponent(),
-     //   "diametro current" + currentDiametervalue);
-     }
-     return currentvalue;
-     }*/
+
+    private class SourceTarget {
+
+        private CyNode source, target;
+
+        public SourceTarget(CyNode source, CyNode target) {
+            this.source = source;
+            this.target = target;
+        }
+
+        public CyNode getSource() {
+            return source;
+        }
+
+        public CyNode getTarget() {
+            return target;
+        }
+
+    }
+
+    private List<Vector> multithreadMultiSPSourceTargetExecute(CyNetwork currentNetwork, List<SourceTarget> STs) throws InterruptedException {
+
+        // list of CompletableFutures - one per each source-target pair
+        List<CompletableFuture<Vector>> futureResults = new LinkedList<>();
+
+        // initiate and execute SP algorithms from each node
+        for (SourceTarget st : STs) {
+            CompletableFuture<Vector> futureResult = CompletableFuture.supplyAsync(new Supplier<Vector>() {
+                @Override
+                public Vector get() {
+                    try {
+                        // execute
+                        return PescaMultiShortestPathTreeAlgorithm.ExecuteMultiShortestPathSourceTargetAlgorithm(currentNetwork, st.getSource(), st.getTarget(), directed, weighted, weightColumn);
+                    } catch (Exception e) {
+                        System.out.println("Execution of SP_ST_Alg interrupted");
+                        return null;
+                    }
+                }
+            }, executor);
+            futureResults.add(futureResult);
+        }
+        
+        
+        List<Vector> results = new LinkedList<>();
+
+        for (CompletableFuture<Vector> futureResult : futureResults) {
+            if (stop || futureResult.isCompletedExceptionally()) {
+                throw new InterruptedException();
+            }
+            try {
+                Vector result = futureResult.get(); // get the result of the computation
+                if (result != null) {
+                    results.add(result);
+                }
+            } catch (InterruptedException | ExecutionException ex) {
+                System.out.println(ex);
+                throw new InterruptedException();
+            }
+        }
+        
+        return results;
+
+    }
+
+    private void cancel() {
+        System.out.println("Canceling");
+        stop = true;
+        if (executor != null) {
+            executor.shutdownNow();
+        }
+    }
 }
+
+
+
+
+

@@ -52,7 +52,7 @@
       <Properties>
         <Property name="toolTipText" type="java.lang.String" value=""/>
         <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
-          <Color id="Cursore predefinito"/>
+          <Color id="Default Cursor"/>
         </Property>
         <Property name="preferredSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
           <Dimension value="[310, 563]"/>
@@ -150,7 +150,7 @@
                               </Group>
                               <Group type="102" attributes="0">
                                   <Component id="spClusterRadioButton" min="-2" max="-2" attributes="0"/>
-                                  <EmptySpace max="32767" attributes="0"/>
+                                  <EmptySpace pref="46" max="32767" attributes="0"/>
                                   <Component id="spClusterHelpButton" min="-2" max="-2" attributes="2"/>
                               </Group>
                               <Group type="102" attributes="0">
@@ -191,7 +191,7 @@
                           <Component id="directedButton" min="-2" max="-2" attributes="0"/>
                           <EmptySpace type="unrelated" max="-2" attributes="0"/>
                           <Component id="weightedButton" min="-2" max="-2" attributes="0"/>
-                          <EmptySpace pref="63" max="32767" attributes="0"/>
+                          <EmptySpace pref="50" max="32767" attributes="0"/>
                       </Group>
                   </Group>
                 </DimensionLayout>
@@ -372,7 +372,7 @@
                 <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
                   <Color blue="33" green="0" red="ff" type="rgb"/>
                 </Property>
-                <Property name="text" type="java.lang.String" value="Pesca Menu"/>
+                <Property name="text" type="java.lang.String" value="Pesca Menu2"/>
               </Properties>
             </Component>
             <Component class="javax.swing.JComboBox" name="urlReadDropdown">

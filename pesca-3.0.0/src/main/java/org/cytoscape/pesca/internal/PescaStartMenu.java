@@ -230,7 +230,7 @@ public class PescaStartMenu extends JPanel implements CytoPanelComponent {
                         .add(spTreeHelpButton))
                     .add(jPanel1Layout.createSequentialGroup()
                         .add(spClusterRadioButton)
-                        .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED, 46, Short.MAX_VALUE)
                         .add(spClusterHelpButton))
                     .add(jPanel1Layout.createSequentialGroup()
                         .add(spIsolatednodesRadioButton)
@@ -261,7 +261,7 @@ public class PescaStartMenu extends JPanel implements CytoPanelComponent {
                 .add(directedButton)
                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.UNRELATED)
                 .add(weightedButton)
-                .addContainerGap(63, Short.MAX_VALUE))
+                .addContainerGap(50, Short.MAX_VALUE))
         );
 
         jPanel2.setBorder(javax.swing.BorderFactory.createEtchedBorder());
@@ -336,7 +336,7 @@ public class PescaStartMenu extends JPanel implements CytoPanelComponent {
 
         jLabel2.setFont(new java.awt.Font("Dialog", 1, 16)); // NOI18N
         jLabel2.setForeground(new java.awt.Color(255, 0, 51));
-        jLabel2.setText("Pesca Menu");
+        jLabel2.setText("Pesca Menu2");
 
         urlReadDropdown.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
 
