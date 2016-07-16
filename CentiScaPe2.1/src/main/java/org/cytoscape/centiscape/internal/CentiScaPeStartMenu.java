@@ -585,7 +585,7 @@ public class CentiScaPeStartMenu extends javax.swing.JPanel implements CytoPanel
                                 .add(jPanel2Layout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
                                     .add(directedRaidioButton)
                                     .add(WeightedCheckBox, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, 260, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE))
-                                .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED, 36, Short.MAX_VALUE)
+                                .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED, 38, Short.MAX_VALUE)
                                 .add(jPanel2Layout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
                                     .add(org.jdesktop.layout.GroupLayout.TRAILING, DirectedNetworkHelpButton)
                                     .add(org.jdesktop.layout.GroupLayout.TRAILING, WeightedNetworkHelpButton)))
@@ -692,7 +692,7 @@ public class CentiScaPeStartMenu extends javax.swing.JPanel implements CytoPanel
 
         jLabel2.setFont(new java.awt.Font("Dialog", 1, 16)); // NOI18N
         jLabel2.setForeground(new java.awt.Color(255, 0, 51));
-        jLabel2.setText("CentiScaPe Menu");
+        jLabel2.setText("CentiScaPe_mt Menu");
 
         jPanel6.setBorder(javax.swing.BorderFactory.createTitledBorder(javax.swing.BorderFactory.createEtchedBorder(), "Warning"));
         jPanel6.setPreferredSize(new java.awt.Dimension(300, 149));
@@ -784,7 +784,7 @@ public class CentiScaPeStartMenu extends javax.swing.JPanel implements CytoPanel
                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
                 .add(jPanel3, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
-                .add(jPanel6, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, 124, Short.MAX_VALUE)
+                .add(jPanel6, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, 124, Short.MAX_VALUE)
                 .addContainerGap())
         );
 

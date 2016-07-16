@@ -466,8 +466,7 @@ public class PescaAlgorithm {
             }, executor);
             futureResults.add(futureResult);
         }
-        
-        
+
         List<Vector> results = new LinkedList<>();
 
         for (CompletableFuture<Vector> futureResult : futureResults) {

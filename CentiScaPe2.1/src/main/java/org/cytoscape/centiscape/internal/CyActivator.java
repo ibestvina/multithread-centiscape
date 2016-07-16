@@ -9,7 +9,7 @@ import org.cytoscape.service.util.CyServiceRegistrar;
 import org.osgi.framework.BundleContext;
 
 public class CyActivator extends AbstractCyActivator { 
-	private final static String VERSION = "2.1";
+	private final static String VERSION = "2.2";
     private CyApplicationManager applicationManager;
     private CySwingApplication desktopService;
     private CyServiceRegistrar serviceRegistrar;

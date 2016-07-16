@@ -599,7 +599,7 @@
                                               <Component id="directedRaidioButton" min="-2" max="-2" attributes="0"/>
                                               <Component id="WeightedCheckBox" min="-2" pref="260" max="-2" attributes="0"/>
                                           </Group>
-                                          <EmptySpace pref="36" max="32767" attributes="0"/>
+                                          <EmptySpace pref="38" max="32767" attributes="0"/>
                                           <Group type="103" groupAlignment="0" attributes="0">
                                               <Component id="DirectedNetworkHelpButton" alignment="1" min="-2" max="-2" attributes="1"/>
                                               <Component id="WeightedNetworkHelpButton" alignment="1" min="-2" max="-2" attributes="1"/>
@@ -893,7 +893,7 @@
                 <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
                   <Color blue="33" green="0" red="ff" type="rgb"/>
                 </Property>
-                <Property name="text" type="java.lang.String" value="CentiScaPe Menu"/>
+                <Property name="text" type="java.lang.String" value="CentiScaPe_mt Menu"/>
               </Properties>
             </Component>
             <Container class="javax.swing.JPanel" name="jPanel6">

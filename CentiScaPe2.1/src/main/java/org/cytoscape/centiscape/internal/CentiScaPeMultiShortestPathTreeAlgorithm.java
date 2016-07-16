@@ -337,4 +337,31 @@ public class CentiScaPeMultiShortestPathTreeAlgorithm {
         return distance;
     }
 
+    
+    
+    
+    public static class SPResult {
+
+        private CyNode root;
+        private Vector CentiScaPeMultiShortestPathVector;
+        private Vector CentiScaPeSingleShortestPathVector;
+
+        public SPResult(CyNode root, Vector CentiScaPeMultiShortestPathVector, Vector CentiScaPeSingleShortestPathVector) {
+            this.root = root;
+            this.CentiScaPeMultiShortestPathVector = CentiScaPeMultiShortestPathVector;
+            this.CentiScaPeSingleShortestPathVector = CentiScaPeSingleShortestPathVector;
+        }
+
+        public CyNode getRoot() {
+            return root;
+        }
+
+        public Vector getCentiScaPeMultiShortestPathVector() {
+            return CentiScaPeMultiShortestPathVector;
+        }
+
+        public Vector getCentiScaPeSingleShortestPathVector() {
+            return CentiScaPeSingleShortestPathVector;
+        }
+    }
 }
