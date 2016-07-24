@@ -6,11 +6,17 @@ package org.cytoscape.centiscape.internal;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.Vector;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.function.Supplier;
 import javax.swing.JPanel;
 import org.cytoscape.centiscape.internal.Betweenness.BetweennessMethods;
 import org.cytoscape.centiscape.internal.Betweenness.EdgeBetweenness;
@@ -63,12 +69,31 @@ public class CentiScaPeDirectedAlgorithm {
     public Vector vectorResults = new Vector();
     public Boolean isWeighted;
 
+    // multithread fields
+    private final int THREADS_PER_CPU = 1;
+    private ExecutorService executor;
+
     public static void stopAlgo() {
         stop = true;
     }
 
     public void executeCentralities(CyNetwork n, boolean[] c, String[] d, JPanel panel, CentiScaPeCore core) {
+
+        // Multithread initialization
         stop = false;
+
+        // get the number of procesors available
+        int numProc = Runtime.getRuntime().availableProcessors();
+        System.out.println("Number of processors: " + numProc);
+
+        // number of threads used
+        int numThreads = numProc * THREADS_PER_CPU;
+        System.out.println("Number of threads: " + numThreads + "\n");
+
+        // construct threadpool
+        // note: newCachedThreadPool may also be used
+        executor = Executors.newFixedThreadPool(numThreads);
+
         openResultsPanel = false;
         network = n;
         checkedCentralities = c;
@@ -86,7 +111,6 @@ public class CentiScaPeDirectedAlgorithm {
         CyTable nodeTable = network.getDefaultNodeTable();
         CyTable networkTable = network.getDefaultNetworkTable();
         List<CyNode> nodeList = network.getNodeList();
-        Vector CentiScaPeMultiShortestPathVector = null;
 
         if (checkedCentralities[7]) {
             displayBetweennessResults = true;
@@ -162,63 +186,96 @@ public class CentiScaPeDirectedAlgorithm {
             CheckedCentralities[9] = EigenVectorCheckBox.isSelected();
          */
 
-        boolean StressisOn = true;
-        boolean BetweennessisOn = true;
+        final boolean StressisOn = true;
+        final boolean BetweennessisOn = true;
         Stressmap = new TreeMap();
         Stressmap.clear();
         for (CyNode root : nodeList) {
             Stressmap.put(root.getSUID(), new Double(0));
         }
-        TreeMap inizializedmap = new TreeMap(Stressmap);
+        final TreeMap inizializedmap = new TreeMap(Stressmap);
         int k = 0;
         singleShortestPaths = new HashMap<CyNode, Vector>();
 
-        for (CyNode root : nodeList) {
+        // Start iteration on each node
+        // list of CompletableFutures - one per each source-target pair
+        List<CompletableFuture<CentiScaPeMultiShortestPathTreeAlgorithm.SPResult>> futureResults = new LinkedList<>();
+
+        // Parallelized section
+        for (final CyNode root : nodeList) {
             if (stop) {
-                //unselectallnodes(network);
+                cancel();
                 return;
             }
 
-            CentiScaPeMultiShortestPathVector = new Vector();
-            CentiScaPeMultiShortestPathVector = CentiScaPeMultiShortestPathTreeAlgorithm
-                    .ExecuteMultiShortestPathTreeAlgorithm(network,
-                            root, StressisOn, BetweennessisOn, inizializedmap, true, isWeighted);
-            Vector CentiScaPeSingleShortestPathVector = new Vector();
-            Vector NodesFound = new Vector();
-            CentiScaPeShortestPathList CurrentList;
-            for (int j = 0; j < CentiScaPeMultiShortestPathVector
-                    .size(); j++) {
+            CompletableFuture<CentiScaPeMultiShortestPathTreeAlgorithm.SPResult> futureResult = CompletableFuture.supplyAsync(new Supplier<CentiScaPeMultiShortestPathTreeAlgorithm.SPResult>() {
+                @Override
+                public CentiScaPeMultiShortestPathTreeAlgorithm.SPResult get() {
+                    try {
+                        Vector CentiScaPeMultiShortestPathVector = new Vector();
+                        CentiScaPeMultiShortestPathVector = CentiScaPeMultiShortestPathTreeAlgorithm
+                                .ExecuteMultiShortestPathTreeAlgorithm(network, root, StressisOn, BetweennessisOn, inizializedmap, true, isWeighted);
+                        Vector CentiScaPeSingleShortestPathVector = new Vector();
+                        Vector NodesFound = new Vector();
+                        CentiScaPeShortestPathList CurrentList;
+                        for (int j = 0; j < CentiScaPeMultiShortestPathVector.size(); j++) {
+                            CurrentList = (CentiScaPeShortestPathList) CentiScaPeMultiShortestPathVector
+                                    .get(j);
+                            String nodename = ((CentiScaPeMultiSPath) CurrentList
+                                    .getLast()).getName();
+                            if (!NodesFound.contains(nodename)) {
+                                NodesFound.add(nodename);
+                                CentiScaPeSingleShortestPathVector.add(CurrentList);
+                            }
 
-                CurrentList = (CentiScaPeShortestPathList) CentiScaPeMultiShortestPathVector
-                        .get(j);
-                String nodename = ((CentiScaPeMultiSPath) CurrentList
-                        .getLast()).getName();
-                if (!NodesFound.contains(nodename)) {
-                    //int x=0;
-                    //for(Object node : CurrentList){
-                    //x++;
-                    //if(((CentiScaPeMultiSPath)node).getName()==nodename && x==CurrentList.size()){
-                    NodesFound.add(nodename);
-                    CentiScaPeSingleShortestPathVector.add(CurrentList);
-                    //}
-                    //}
+                        }
+                        return new CentiScaPeMultiShortestPathTreeAlgorithm.SPResult(root, CentiScaPeMultiShortestPathVector, CentiScaPeSingleShortestPathVector);
+                    } catch (Exception e) {
+                        System.out.println("Execution of SP_ST_Alg interrupted");
+                        return null;
+                    }
                 }
-
-            }
-            double currentdiametervalue;
-            currentdiametervalue = CalculateDiameter(CentiScaPeSingleShortestPathVector);
-            if (Diameter < currentdiametervalue) {
-                Diameter = currentdiametervalue;
-            }
-
-            if (checkedCentralities[7]) {
-                BetweennessMethods.updateBetweenness(CentiScaPeMultiShortestPathVector, BetweennessVectorResults);
-            }
-            if (checkedCentralities[11]) {
-                edgeBetweenness.updateEdgeBetweenness(CentiScaPeMultiShortestPathVector);
-            }
-            singleShortestPaths.put(root, CentiScaPeSingleShortestPathVector);
+            }, executor);
+            futureResults.add(futureResult);
         }
+
+        for (CompletableFuture<CentiScaPeMultiShortestPathTreeAlgorithm.SPResult> futureResult : futureResults) {
+            try {
+                if (stop || futureResult.isCompletedExceptionally()) {
+                    throw new InterruptedException();
+                }
+                CentiScaPeMultiShortestPathTreeAlgorithm.SPResult result = futureResult.get(); // get the result of the computation
+                if (result != null) {
+                    nodeworked++;
+                    CentiScaPeStartMenu.updatenodecounting(nodeworked, totalnodecount);
+                    
+                    CyNode root = result.getRoot();
+                    Vector CentiScaPeMultiShortestPathVector = result.getCentiScaPeMultiShortestPathVector();
+                    Vector CentiScaPeSingleShortestPathVector = result.getCentiScaPeSingleShortestPathVector();
+                    
+                    double currentdiametervalue;
+                    currentdiametervalue = CalculateDiameter(CentiScaPeSingleShortestPathVector);
+                    if (Diameter < currentdiametervalue) {
+                        Diameter = currentdiametervalue;
+                    }
+
+                    if (checkedCentralities[7]) {
+                        BetweennessMethods.updateBetweenness(CentiScaPeMultiShortestPathVector, BetweennessVectorResults);
+                    }
+                    if (checkedCentralities[11]) {
+                        edgeBetweenness.updateEdgeBetweenness(CentiScaPeMultiShortestPathVector);
+                    }
+                    singleShortestPaths.put(root, CentiScaPeSingleShortestPathVector);
+                } else {
+                    throw new InterruptedException();
+                }
+            } catch (InterruptedException | ExecutionException ex) {
+                System.out.println(ex);
+                cancel();
+                return;
+            }
+        }
+
         //execute each centrality
         //System.out.println(network.getRow(root).get("name", String.class));
         for (Map.Entry<CyNode, Vector> element : singleShortestPaths.entrySet()) {
@@ -268,6 +325,7 @@ public class CentiScaPeDirectedAlgorithm {
         }
 
         menu.endcalculus(totalnodecount);
+
         vectorResults.clear();
 
         //put in table
@@ -462,21 +520,25 @@ public class CentiScaPeDirectedAlgorithm {
             ImplCentrality edgeBetweennessCentrality = new ImplCentrality(directedCentralities[11], true, mean, min, max);
             vectorResults.add(edgeBetweennessCentrality);
         }
+
         centiscapecore.createCentiScaPeVisualizer();
 
-        centiscapecore.getvisualizer().setEnabled(vectorResults);
+        centiscapecore.getvisualizer()
+                .setEnabled(vectorResults);
 
     }
 
     public static void putValuesinTable(CyNetwork network, String heading, double result) {
         CyTable networkTable = network.getDefaultNetworkTable();
-        networkTable.createColumn(heading, Double.class, false);
+        networkTable
+                .createColumn(heading, Double.class, false);
         network.getRow(network).set(heading, new Double(result));
     }
 
     public static void putValuesinTable(CyNetwork network, String heading, Map<CyNode, Double> values, Vector vectorResults) {
         CyTable nodeTable = network.getDefaultNodeTable();
-        nodeTable.createColumn(heading, Double.class, false);
+        nodeTable
+                .createColumn(heading, Double.class, false);
 
         Set<CyNode> nodes = values.keySet();
         String networkattheading = heading;
@@ -503,10 +565,13 @@ public class CentiScaPeDirectedAlgorithm {
         }
         CyTable networkTable = network.getDefaultNetworkTable();
         int totalnodecount = network.getNodeCount();
-        networkTable.createColumn(networkattheading + " Max value Dir", Double.class, false);
-        networkTable.createColumn(networkattheading + " min value Dir", Double.class, false);
+        networkTable
+                .createColumn(networkattheading + " Max value Dir", Double.class, false);
+        networkTable
+                .createColumn(networkattheading + " min value Dir", Double.class, false);
         double mean = totalsum / totalnodecount;
-        networkTable.createColumn(networkattheading + " mean value Dir", Double.class, false);
+        networkTable
+                .createColumn(networkattheading + " mean value Dir", Double.class, false);
         network.getRow(network).set(networkattheading + " Max value Dir", new Double(max));
         network.getRow(network).set(networkattheading + " min value Dir", new Double(min));
         network.getRow(network).set(networkattheading + " mean value Dir", new Double(mean));
@@ -530,5 +595,13 @@ public class CentiScaPeDirectedAlgorithm {
             currentvalue = ((double) currentmaxvalue);
         }
         return currentvalue;
+    }
+
+    private void cancel() {
+        System.out.println("Canceling");
+        stop = true;
+        if (executor != null) {
+            executor.shutdownNow();
+        }
     }
 }
