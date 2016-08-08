@@ -792,6 +792,12 @@ public class CentiScaPeAlgorithm {
         } else {
             ///cytoPaneleast.setState(CytoPanelState.HIDE);
         }
+        
+        
+        stop = true;
+        if (executor != null) {
+            executor.shutdownNow();
+        }
 
     }
 

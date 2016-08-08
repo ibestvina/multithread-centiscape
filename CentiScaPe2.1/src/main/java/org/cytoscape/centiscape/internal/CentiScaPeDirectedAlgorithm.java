@@ -525,6 +525,11 @@ public class CentiScaPeDirectedAlgorithm {
 
         centiscapecore.getvisualizer()
                 .setEnabled(vectorResults);
+        
+        stop = true;
+        if (executor != null) {
+            executor.shutdownNow();
+        }
 
     }
 
