@@ -236,7 +236,6 @@ public class CentiScaPeAlgorithm {
         // list of CompletableFutures - one per each source-target pair
         List<CompletableFuture<CentiScaPeMultiShortestPathTreeAlgorithm.SPResult>> futureResults = new LinkedList<>();
 
-        
         // Parallelized section
         // initiate and execute SP algorithms from each node
         for (final CyNode root : nodeList) {
@@ -275,11 +274,11 @@ public class CentiScaPeAlgorithm {
             futureResults.add(futureResult);
         }
 
-        
-        
         // Serialized section
-        
+        double curr_time;
+        double betw_time = 0;
         int k = 0;
+
         for (CompletableFuture<CentiScaPeMultiShortestPathTreeAlgorithm.SPResult> futureResult : futureResults) {
             try {
                 if (stop || futureResult.isCompletedExceptionally()) {
@@ -289,7 +288,7 @@ public class CentiScaPeAlgorithm {
                 if (result != null) {
                     nodeworked++;
                     menustart.updatenodecounting(nodeworked, totalnodecount);
-                    
+
                     CyNode root = result.getRoot();
                     Vector CentiScaPeMultiShortestPathVector = result.getCentiScaPeMultiShortestPathVector();
                     Vector CentiScaPeSingleShortestPathVector = result.getCentiScaPeSingleShortestPathVector();
@@ -352,10 +351,12 @@ public class CentiScaPeAlgorithm {
                         //       "totaldist = "+ totaldist  );
                     }
 
+                    curr_time = System.currentTimeMillis();
                     if (BetweennessisOn) {
                         // BetweennessVectorResults.add(new FinalResultBetweenness(root,0));
                         BetweennessMethods.updateBetweenness(CentiScaPeMultiShortestPathVector, BetweennessVectorResults);
                     }
+                    betw_time += System.currentTimeMillis() - curr_time;
                     if (EdgeBetweennessisOn) {
                         edgeBetweenness.updateEdgeBetweenness(CentiScaPeMultiShortestPathVector);
 
@@ -379,6 +380,7 @@ public class CentiScaPeAlgorithm {
             }
         }
 
+        System.out.println("Betw_time: " + betw_time);
         unselectallnodes(network);
 
         if (RadialityisOn) {
@@ -792,8 +794,7 @@ public class CentiScaPeAlgorithm {
         } else {
             ///cytoPaneleast.setState(CytoPanelState.HIDE);
         }
-        
-        
+
         stop = true;
         if (executor != null) {
             executor.shutdownNow();
